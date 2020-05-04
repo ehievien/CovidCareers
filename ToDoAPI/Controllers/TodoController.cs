@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+
 using ToDoAPI.Models;
+using ToDoAPI.ToDo.Entity.DbContexts;
 
 namespace ToDoAPI.Controllers
 {
@@ -9,6 +11,13 @@ namespace ToDoAPI.Controllers
     [ApiController]
     public class TodoController : ControllerBase
     {
+        private readonly TodoDbContext _context;
+
+        public TodoController(TodoDbContext context)
+        {
+            _context = context;
+        }
+
 
         List<Todo> Todos = new List<Todo>
         {

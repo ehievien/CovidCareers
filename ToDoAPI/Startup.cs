@@ -9,8 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using ToDoAPI.DbContexts;
-
+using ToDoAPI.ToDo.Entity.DbContexts;
 
 namespace ToDoAPI
 {
@@ -32,7 +31,7 @@ namespace ToDoAPI
             services.AddDbContext<TodoDbContext>(options =>
             {
                 options.UseSqlServer(
-                    @"Server=(localdb)\mssqllocaldb;Database=ToDoDB;Trusted_Connection=True;");
+                    @"Server=(localdb)\mssqllocaldb;Database=ToDoDB;Trusted_Connection=True;MultipleActiveResultSets=true");
                // options.UseSqlServer(Configuration["ConnectionString:ToDoDB"]);
             });
 

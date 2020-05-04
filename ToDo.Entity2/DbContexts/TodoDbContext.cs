@@ -1,9 +1,8 @@
 ﻿using System;
-using ToDoAPI.Models;
 using Microsoft.EntityFrameworkCore;
+using ToDoAPI.Models;
 
-
-namespace ToDoAPI.DbContexts
+namespace ToDoAPI.ToDo.Entity.DbContexts
 {
     public class TodoDbContext : DbContext
     {
@@ -13,13 +12,13 @@ namespace ToDoAPI.DbContexts
         {
         }
 
-        public DbSet<Todo> Todo { get; set; }
+        public DbSet<TodoEntity> Todo { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // seed the database with dummy data
-            modelBuilder.Entity<Todo>().HasData(
-                new Todo()
+            modelBuilder.Entity<TodoEntity>().HasData(
+                new TodoEntity()
                 {
                     Id = 1,
                     Title = "Learn how to cook",
@@ -28,18 +27,18 @@ namespace ToDoAPI.DbContexts
                     Description = "Cook",
                     Completed = true
                 },
-                new Todo()
+                new TodoEntity()
                 {
-                    Id = 1,
+                    Id = 2,
                     Title = "Learn how to dance",
                     DateCreated = new DateTime(2020, 2, 17),
                     LastDateUpdated = new DateTime(2020, 3, 15),
                     Description = "Dance",
                     Completed = true
                 },
-                new Todo()
+                new TodoEntity()
                 {
-                    Id = 1,
+                    Id = 3,
                     Title = "Learn how to drive",
                     DateCreated = new DateTime(2020, 3, 15),
                     LastDateUpdated = new DateTime(2020, 3, 15),
