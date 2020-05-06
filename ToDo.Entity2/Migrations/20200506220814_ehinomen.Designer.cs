@@ -10,8 +10,8 @@ using ToDoAPI.ToDo.Entity.DbContexts;
 namespace ToDo.Entity.Migrations
 {
     [DbContext(typeof(TodoDbContext))]
-    [Migration("20200504023512_initial")]
-    partial class initial
+    [Migration("20200506220814_ehinomen")]
+    partial class ehinomen
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
