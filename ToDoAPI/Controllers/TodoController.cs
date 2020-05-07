@@ -1,58 +1,52 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-
 using ToDoAPI.Models;
-using ToDoAPI.ToDo.Entity.DbContexts;
+using ToDoAPI.Services;
+
 
 namespace ToDoAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[Controller]")]
     [ApiController]
     public class TodoController : ControllerBase
     {
-        private readonly TodoDbContext _context;
 
-        public TodoController(TodoDbContext context)
+        private readonly ITodoService _Service;
+        public TodoController(ITodoService todoService)
         {
-            _context = context;
+            _Service = todoService ?? throw new ArgumentNullException(nameof(todoService));
         }
 
 
-        List<Todo> Todos = new List<Todo>
-        {
-            new Todo { Id = 1, Description = "Cook ", Title = "Learn How to Cook", Completed = false },
-            new Todo { Id = 2, Description = "Yo-yo", Title = "Toys", Completed =true, DateCreated = DateTime.Now,LastDateUpdated = DateTime.Now },
-            new Todo { Id = 3, Description = "Hammer", Title = "Hardware", Completed = false, DateCreated = DateTime.Now, LastDateUpdated = DateTime.Now }
-        };
- 
-    [HttpGet]
+
+        [HttpGet]
         [Produces("application/json")]
-        public List<Todo> GetAllTodos()
+        public IActionResult GetTodos()
         {
 
-            return Todos;
+            var todoResult = _Service.GetTodo();
+            return new JsonResult(todoResult);
+
         }
 
-        [HttpPost]
+        [HttpGet("{id}")]
         [Produces("application/json")]
-        public IActionResult CreateTodo([FromBody] Todo t)
+        public IActionResult GetTodo(int id)
         {
 
-            try
-            {
-                Todos.Add(t);
-
-            
-                return Ok();
-
-            }
-            catch (Exception ex)
-            {
-
-                return BadRequest();
-            }
+            var todoResult = _Service.GetTodo(id);
+            return new JsonResult(todoResult);
 
         }
+
+        [HttpDelete("{id}")]
+        public TodoEntity DeleteTodo(TodoEntity todo)
+        {
+           _Service.DeleteTodo(todo);
+            return todo;
+        }
+
+
     }
 }

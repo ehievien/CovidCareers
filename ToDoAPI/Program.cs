@@ -26,7 +26,7 @@ namespace ToDoAPI
                     var context = scope.ServiceProvider.GetService<TodoDbContext>();
                     // for demo purposes, delete the database & migrate on startup so 
                     // we can start with a clean slate
-                    context.Database.EnsureDeleted();
+                   // context.Database.EnsureDeleted();
                     context.Database.Migrate();
                 }
                 catch (Exception ex)
@@ -39,6 +39,8 @@ namespace ToDoAPI
             // run app
             host.Run();
         }
+
+
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)

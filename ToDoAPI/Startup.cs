@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ToDoAPI.ToDo.Entity.DbContexts;
+using ToDoAPI.Services;
 
 namespace ToDoAPI
 {
@@ -27,6 +28,9 @@ namespace ToDoAPI
 
         public void ConfigureServices(IServiceCollection services)
         {
+
+            services.AddControllers();
+            services.AddScoped<ITodoService, TodoService>();
 
             services.AddDbContext<TodoDbContext>(options =>
             {
@@ -47,6 +51,8 @@ namespace ToDoAPI
             }
 
             app.UseRouting();
+
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {
