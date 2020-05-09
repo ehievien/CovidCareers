@@ -36,7 +36,22 @@ namespace ToDoAPI
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "ToDo API",
+                    Version = "v1",
+                    Description = "A simple TODO API",
+                    TermsOfService = new Uri("https://example.com/terms"),
+                    Contact = new OpenApiContact
+                    {
+                        Name = "Ehinomen Evien",
+                        Email = string.Empty,
+                        Url = new Uri("https://github.com/ehievien/restfulApi/branches"),
+
+                    },
+                });
+
+
             });
 
             services.AddDbContext<TodoDbContext>(options =>
