@@ -12,7 +12,7 @@ namespace ToDoAPI.Services
         IEnumerable<TodoEntity> GetTodo(int todoId);
 
         // delete todo
-        TodoEntity DeleteTodo(TodoEntity todo);
+        TodoEntity DeleteTodo(int id);
 
         //add todo
         TodoEntity AddTodo(TodoEntity todo);

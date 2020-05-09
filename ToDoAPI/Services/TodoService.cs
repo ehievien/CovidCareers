@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ToDoAPI.Models;
@@ -33,17 +34,16 @@ namespace ToDoAPI.Services
                         .OrderBy(c => c.Title).ToList();
         }
 
-        public TodoEntity DeleteTodo(TodoEntity todo)
+        public TodoEntity DeleteTodo(int id)
         {
-            if (todo == null)
+            var todoItem = _context.Todo.Find(id);
+            if (todoItem == null)
             {
-                throw new ArgumentNullException(nameof(todo));
+                return null;
             }
-
-            _context.Todo.Remove(todo);
+            _context.Todo.Remove(todoItem);
             _context.SaveChanges();
-
-            return todo;
+            return todoItem;
         }
 
         public TodoEntity AddTodo(TodoEntity todo)
@@ -52,12 +52,8 @@ namespace ToDoAPI.Services
             {
                 throw new ArgumentNullException(nameof(todo));
             }
-
-            if (todo.Id == 0)
-            {
-                throw new ArgumentNullException(nameof(todo.Id));
-            }
             _context.Todo.Add(todo);
+            _context.SaveChanges();
             return todo;
         }
 
@@ -72,8 +68,27 @@ namespace ToDoAPI.Services
             {
                 throw new ArgumentNullException(nameof(todo.Id));
             }
-            _context.Todo.Update(todo);
-            _context.SaveChanges();
+            using (var context = _context)
+            {
+                // Retrieve entity by id
+                // Answer for question #1
+                var entity = context.Todo.FirstOrDefault(item => item.Id == todo.Id);
+
+                // Validate entity is not null
+                if (entity != null)
+                {
+                    //make changes
+                    entity.Title = todo.Title;
+                    entity.Description = todo.Description;
+                    entity.DateCreated = todo.DateCreated;
+                    entity.LastDateUpdated = todo.LastDateUpdated;
+                    entity.Completed = todo.Completed;
+                    // Update entity in DbSet
+                    context.Todo.Update(entity);
+                    // Save changes in database
+                    context.SaveChanges();
+                }
+            }           
             return todo;
         }
 

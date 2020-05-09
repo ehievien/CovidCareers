@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using ToDoAPI.Models;
 using ToDoAPI.Services;
-
+using ToDoAPI.ToDo.Entity.DbContexts;
 
 namespace ToDoAPI.Controllers
 {
@@ -13,9 +14,11 @@ namespace ToDoAPI.Controllers
     {
 
         private readonly ITodoService _Service;
-        public TodoController(ITodoService todoService)
+        private readonly TodoDbContext _context;
+        public TodoController(ITodoService todoService, TodoDbContext context)
         {
             _Service = todoService ?? throw new ArgumentNullException(nameof(todoService));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
 
@@ -41,10 +44,34 @@ namespace ToDoAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        public TodoEntity DeleteTodo(TodoEntity todo)
+        public IActionResult DeleteTodo(int id)
         {
-           _Service.DeleteTodo(todo);
-            return todo;
+           var todoitem = _Service.DeleteTodo(id);
+            if (todoitem == null)
+            {
+                return NotFound();
+            }else{
+                return new JsonResult(todoitem);
+            }
+        }
+
+        [HttpPost]
+        public IActionResult AddTodo(TodoEntity todo)
+        {
+            _Service.AddTodo(todo);
+            return CreatedAtAction(nameof(AddTodo), new { id = todo.Id }, todo);
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult UpdateTodo(int id,TodoEntity todo)
+        {
+            if (id != todo.Id)
+            {
+                return BadRequest();
+            }
+           
+            _Service.UpdateTodo(todo);
+            return CreatedAtAction(nameof(UpdateTodo), new { id = todo.Id }, todo);
         }
 
 
