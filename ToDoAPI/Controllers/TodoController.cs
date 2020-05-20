@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using ToDoAPI.Models;
 using ToDoAPI.Services;
 using ToDoAPI.ToDo.Entity.DbContexts;
@@ -25,7 +26,7 @@ namespace ToDoAPI.Controllers
 
         [HttpGet]
         [Produces("application/json")]
-        public IActionResult GetTodos()
+        public async Task<IActionResult> GetTodos()
         {
 
             var todoResult = _Service.GetTodo();
@@ -35,7 +36,7 @@ namespace ToDoAPI.Controllers
 
         [HttpGet("{id}")]
         [Produces("application/json")]
-        public IActionResult GetTodo(int id)
+        public async Task<IActionResult> GetTodo(int id)
         {
 
             var todoResult = _Service.GetTodo(id);
@@ -44,9 +45,9 @@ namespace ToDoAPI.Controllers
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteTodo(int id)
+        public async Task<IActionResult> DeleteTodo(int id)
         {
-           var todoitem = _Service.DeleteTodo(id);
+           var todoitem =  _Service.DeleteTodo(id);
             if (todoitem == null)
             {
                 return NotFound();
@@ -56,14 +57,14 @@ namespace ToDoAPI.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddTodo(TodoEntity todo)
+        public async Task<IActionResult> AddTodo(TodoEntity todo)
         {
             _Service.AddTodo(todo);
             return CreatedAtAction(nameof(AddTodo), new { id = todo.Id }, todo);
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateTodo(int id,TodoEntity todo)
+        public async Task<IActionResult> UpdateTodo(int id,TodoEntity todo)
         {
             if (id != todo.Id)
             {
