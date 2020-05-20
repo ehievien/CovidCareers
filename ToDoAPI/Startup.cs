@@ -57,8 +57,8 @@ namespace ToDoAPI
             services.AddDbContext<TodoDbContext>(options =>
             {
                 options.UseSqlServer(
-                    @"Server=Ehinomen;Database=ToDoDB;Trusted_Connection=True;MultipleActiveResultSets=true");
-               // options.UseSqlServer(Configuration["ConnectionString:ToDoDB"]);
+                  Configuration.GetConnectionString("DefaultConfig"));
+                // options.UseSqlServer(Configuration["ConnectionString:ToDoDB"]);
             });
 
             services.AddControllers();

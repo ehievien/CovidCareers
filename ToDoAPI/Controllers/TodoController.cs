@@ -1,7 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Dapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ToDoAPI.Models;
 using ToDoAPI.Services;
@@ -14,65 +19,168 @@ namespace ToDoAPI.Controllers
     public class TodoController : ControllerBase
     {
 
-        private readonly ITodoService _Service;
-        private readonly TodoDbContext _context;
-        public TodoController(ITodoService todoService, TodoDbContext context)
+        //private readonly ITodoService _Service;
+        //private readonly TodoDbContext _context;
+        //public TodoController(ITodoService todoService, TodoDbContext context)
+        //{
+        //    _Service = todoService ?? throw new ArgumentNullException(nameof(todoService));
+        //    _context = context ?? throw new ArgumentNullException(nameof(context));
+        //}
+        public IConfiguration _configuration { get; }
+        public TodoController(IConfiguration configuration)
         {
-            _Service = todoService ?? throw new ArgumentNullException(nameof(todoService));
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _configuration = configuration;
         }
 
-
+        List<Todo> Todos;
 
         [HttpGet]
         [Produces("application/json")]
-        public async Task<IActionResult> GetTodos()
+        public IActionResult GetTodos()
         {
-
-            var todoResult = _Service.GetTodo();
-            return new JsonResult(todoResult);
+            try
+            {
+                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
+                {
+                    Todos = connection.Query<Todo>("SELECT  * from Todo ").ToList();
+                    if (Todos == null)
+                    {
+                        return NotFound("No todo item found");
+                    }
+                    return Ok(Todos);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
 
         }
 
         [HttpGet("{id}")]
         [Produces("application/json")]
-        public async Task<IActionResult> GetTodo(int id)
+        public IActionResult GetTodo(int id)
         {
-
-            var todoResult = _Service.GetTodo(id);
-            return new JsonResult(todoResult);
+            try
+            {
+                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
+                {
+                    Todo todo = connection.Query<Todo>("SELECT * from Todo WHERE Id=@Id", new{Id = id}).FirstOrDefault();
+                    if (todo == null)
+                    {
+                        return NotFound("Todo not found");
+                    }
+                    return Ok(todo);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
 
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteTodo(int id)
+        public IActionResult DeleteTodo(int id)
         {
-           var todoitem =  _Service.DeleteTodo(id);
-            if (todoitem == null)
+            try
             {
-                return NotFound();
-            }else{
-                return new JsonResult(todoitem);
+                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
+                {
+                    string sqlQuery = @"DELETE FROM Todo WHERE Id = @id";
+                    connection.Execute(sqlQuery, new { Id = id });
+                    return StatusCode(StatusCodes.Status200OK);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private bool DoesExist(string title)
+        {
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
+            {
+                string sqlQuery = @"SELECT * FROM Todo WHERE Title=@Title";
+                var todoFromDb = connection.Query<Todo>(sqlQuery, new{Title = title}).FirstOrDefault();
+                if (todoFromDb != null)
+                    return true;
+               else return false;
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddTodo(TodoEntity todo)
+        [Produces("application/json")]
+        public  IActionResult AddTodo([FromBody] TodoEntity todo)
         {
-            _Service.AddTodo(todo);
-            return CreatedAtAction(nameof(AddTodo), new { id = todo.Id }, todo);
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState.Values);
+                }
+
+                if (DoesExist(todo.Title))
+                {
+                    return BadRequest("Title Exist");
+                }
+
+                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
+                {
+                    var result = connection.Execute(@"INSERT INTO 
+                        Todo(Title, Description,Completed,DateCreated, LastDateUpdated) 
+                        VALUES(@Title,@Description,@Completed,@DateCreated, @LastDateUpdated); Select Scope_Identity();",
+                       new{
+                           Title = todo.Title,
+                        Description = todo.Description,
+                        Completed = todo.Completed,
+                        DateCreated = DateTime.Now,
+                        LastDateUpdated = DateTime.Now });                  
+                   if (result > 0)
+                   return StatusCode(StatusCodes.Status201Created);
+                   else
+                   return StatusCode(StatusCodes.Status501NotImplemented);
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTodo(int id,TodoEntity todo)
+        public IActionResult UpdateTodo(int id,  [FromBody]TodoEntity todo)
         {
-            if (id != todo.Id)
+            try
             {
-                return BadRequest();
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState.Values);
+                }
+                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
+                {
+                    Todo todoo = connection.Query<Todo>("SELECT * from Todo WHERE Id=@Id", new{Id = id}).FirstOrDefault();
+                    if (todo == null){
+                        return NotFound("Todo not found");}
+
+                    connection.Execute(@"UPDATE Todo 
+                    SET Title=@Title,Description=@Description,Completed=@Completed,
+                    LastDateUpdated=@LastDateUpdated WHERE Id=@Id",
+                   new{
+                        Id = id,
+                        Title = todo.Title,
+                        Description = todo.Description,
+                        Completed = todo.Completed,
+                        LastDateUpdated = DateTime.Now,
+                    });
+                    return Ok(todo);
+                }
             }
-           
-            _Service.UpdateTodo(todo);
-            return CreatedAtAction(nameof(UpdateTodo), new { id = todo.Id }, todo);
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
 
