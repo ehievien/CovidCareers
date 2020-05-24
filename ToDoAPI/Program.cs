@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Serilog;
 using ToDoAPI.ToDo.Entity.DbContexts;
 
 namespace ToDoAPI
@@ -16,6 +17,11 @@ namespace ToDoAPI
     {
         public static void Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.FromLogContext()
+                .WriteTo.Console()
+                .CreateLogger();
+
             var host = CreateHostBuilder(args).Build();
 
             // migrate the database.  Best practice = in Main, using service scope
@@ -37,6 +43,7 @@ namespace ToDoAPI
             }
 
             // run app
+            Log.Information("Starting up");
             host.Run();
         }
 
@@ -47,6 +54,6 @@ namespace ToDoAPI
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                });
+                }).UseSerilog();
     }
 }

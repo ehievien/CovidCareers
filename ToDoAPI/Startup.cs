@@ -12,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using ToDoAPI.ToDo.Entity.DbContexts;
 using ToDoAPI.Services;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 namespace ToDoAPI
 {
@@ -74,6 +75,7 @@ namespace ToDoAPI
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
+            app.UseSerilogRequestLogging();
 
             // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
             // specifying the Swagger JSON endpoint.

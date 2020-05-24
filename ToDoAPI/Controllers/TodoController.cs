@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,7 @@ using System.Threading.Tasks;
 using ToDoAPI.Models;
 using ToDoAPI.Services;
 using ToDoAPI.ToDo.Entity.DbContexts;
+using ToDoAPI.TodoDTO;
 
 namespace ToDoAPI.Controllers
 {
@@ -19,20 +21,17 @@ namespace ToDoAPI.Controllers
     public class TodoController : ControllerBase
     {
 
-        //private readonly ITodoService _Service;
-        //private readonly TodoDbContext _context;
-        //public TodoController(ITodoService todoService, TodoDbContext context)
-        //{
-        //    _Service = todoService ?? throw new ArgumentNullException(nameof(todoService));
-        //    _context = context ?? throw new ArgumentNullException(nameof(context));
-        //}
-        public IConfiguration _configuration { get; }
-        public TodoController(IConfiguration configuration)
-        {
-            _configuration = configuration;
+        
+        private readonly TodoDT dto;
+        private ILogger<TodoController> _logger;
+        public TodoController( ILogger<TodoController> logger)
+        {           
+            _logger = logger;
+            dto = new TodoDT();              
         }
 
-        List<Todo> Todos;
+
+        IEnumerable<TodoEntity> Todos;
 
         [HttpGet]
         [Produces("application/json")]
@@ -40,18 +39,13 @@ namespace ToDoAPI.Controllers
         {
             try
             {
-                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
-                {
-                    Todos = connection.Query<Todo>("SELECT  * from Todo ").ToList();
-                    if (Todos == null)
-                    {
-                        return NotFound("No todo item found");
-                    }
-                    return Ok(Todos);
-                }
+                _logger.LogInformation($"about to get all todos");
+                Todos = dto.GetAllTodo();
+                return Ok (Todos);
             }
             catch (Exception ex)
             {
+                _logger.LogDebug($"exception ---"+ex);
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
@@ -63,18 +57,12 @@ namespace ToDoAPI.Controllers
         {
             try
             {
-                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
-                {
-                    Todo todo = connection.Query<Todo>("SELECT * from Todo WHERE Id=@Id", new{Id = id}).FirstOrDefault();
-                    if (todo == null)
-                    {
-                        return NotFound("Todo not found");
-                    }
-                    return Ok(todo);
-                }
+                _logger.LogInformation($"about to get todos with id --{id}");
+                return Ok(dto.GetTodo(id));                
             }
             catch (Exception ex)
             {
+                _logger.LogDebug($"exception ---" + ex);
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
@@ -85,30 +73,21 @@ namespace ToDoAPI.Controllers
         {
             try
             {
-                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
-                {
-                    string sqlQuery = @"DELETE FROM Todo WHERE Id = @id";
-                    connection.Execute(sqlQuery, new { Id = id });
+                _logger.LogInformation($"about to delete todo with id --{id}");
+                int result = dto.DeleteTodo(id);
+                if (result > 0)
                     return StatusCode(StatusCodes.Status200OK);
-                }
+                else
+                    return StatusCode(StatusCodes.Status501NotImplemented);
             }
             catch (Exception ex)
             {
+                _logger.LogDebug($"exception ---" + ex);
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
 
-        private bool DoesExist(string title)
-        {
-            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
-            {
-                string sqlQuery = @"SELECT * FROM Todo WHERE Title=@Title";
-                var todoFromDb = connection.Query<Todo>(sqlQuery, new{Title = title}).FirstOrDefault();
-                if (todoFromDb != null)
-                    return true;
-               else return false;
-            }
-        }
+       
 
         [HttpPost]
         [Produces("application/json")]
@@ -116,35 +95,20 @@ namespace ToDoAPI.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState.Values);
-                }
-
-                if (DoesExist(todo.Title))
-                {
-                    return BadRequest("Title Exist");
-                }
-
-                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
-                {
-                    var result = connection.Execute(@"INSERT INTO 
-                        Todo(Title, Description,Completed,DateCreated, LastDateUpdated) 
-                        VALUES(@Title,@Description,@Completed,@DateCreated, @LastDateUpdated); Select Scope_Identity();",
-                       new{
-                           Title = todo.Title,
-                        Description = todo.Description,
-                        Completed = todo.Completed,
-                        DateCreated = DateTime.Now,
-                        LastDateUpdated = DateTime.Now });                  
+                if (!ModelState.IsValid) {
+                    return BadRequest(ModelState.Values);}
+                if (dto.DoesExist(todo.Title)){
+                    return BadRequest("Title Exist");}
+                _logger.LogInformation($"about to create todo with title --{todo.Title}");
+                int result = dto.AddTodo(todo);              
                    if (result > 0)
                    return StatusCode(StatusCodes.Status201Created);
                    else
-                   return StatusCode(StatusCodes.Status501NotImplemented);
-                }
+                   return StatusCode(StatusCodes.Status501NotImplemented);                
             }
             catch (Exception ex)
             {
+                _logger.LogDebug($"exception ---" + ex);
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
@@ -158,27 +122,16 @@ namespace ToDoAPI.Controllers
                 {
                     return BadRequest(ModelState.Values);
                 }
-                using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConfig")))
-                {
-                    Todo todoo = connection.Query<Todo>("SELECT * from Todo WHERE Id=@Id", new{Id = id}).FirstOrDefault();
-                    if (todo == null){
-                        return NotFound("Todo not found");}
-
-                    connection.Execute(@"UPDATE Todo 
-                    SET Title=@Title,Description=@Description,Completed=@Completed,
-                    LastDateUpdated=@LastDateUpdated WHERE Id=@Id",
-                   new{
-                        Id = id,
-                        Title = todo.Title,
-                        Description = todo.Description,
-                        Completed = todo.Completed,
-                        LastDateUpdated = DateTime.Now,
-                    });
-                    return Ok(todo);
-                }
+                _logger.LogInformation($"about to update todo with id --{todo.Id}");
+                int result = dto.UpdateTodo(todo);
+                if (result > 0)
+                    return StatusCode(StatusCodes.Status200OK);
+                else
+                    return StatusCode(StatusCodes.Status501NotImplemented);
             }
             catch (Exception ex)
             {
+                _logger.LogDebug($"exception ---" + ex);
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
